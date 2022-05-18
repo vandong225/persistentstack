@@ -1,0 +1,74 @@
+version: "3"
+services:
+  mongo-replica-setup:
+    container_name: mongo-replica-setup
+    image: mongo
+    restart: on-failure
+    networks:
+      - common
+    volumes:
+      - ./scripts/rs-init.sh:/scripts/rs-init.sh
+    entrypoint: ["bash", "/scripts/rs-init.sh" ]
+    env_file:
+        - .env
+    user: "${UID}:${GID}"
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+  mongo1:
+    container_name: mongo1
+    image: mongo
+    env_file:
+      - .env
+    user: "${UID}:${GID}"
+    volumes:
+      - ./data/mongo1:/data/db
+    networks:
+      - common
+    ports:
+      - 27017:27017
+    expose:
+      - 27017
+    restart: always
+    entrypoint: ["/usr/bin/mongod", "--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: echo 'db.runCommand({serverStatus:1}).ok' | grep 1
+      interval: 30s
+      start_period: 60s
+  mongo2:
+    container_name: mongo2
+    image: mongo
+    env_file:
+      - .env
+    user: "${UID}:${GID}"
+    volumes:
+      - ./data/mongo2:/data/db
+    networks:
+      - common
+    ports:
+      - 27018:27017
+    restart: always
+    entrypoint: ["/usr/bin/mongod", "--replSet", "rs0", "--bind_ip_all"]
+  mongo3:
+    container_name: mongo3
+    image: mongo
+    env_file:
+      - .env
+    user: "${UID}:${GID}"
+    volumes:
+      - ./data/mongo3:/data/db
+    networks:
+      - common
+    ports:
+      - 27019:27017
+    restart: always
+    entrypoint: ["/usr/bin/mongod", "--replSet", "rs0", "--bind_ip_all"]
+networks:
+  common:
+    driver: bridge
+volumes:
+  mongo1:
+  mongo2:
+  mongo3:
+
